@@ -1,80 +1,105 @@
-import { FormEventHandler, useCallback, useEffect, useRef, useState } from 'react'
-import { DefaultSpinner, Editor, Tldraw } from 'tldraw'
-import { useTldrawAiExample } from './useTldrawAiExample'
+import { useState } from 'react'
+import { 
+	Box, 
+	Flex, 
+	Button, 
+	HStack,
+	Text
+} from '@chakra-ui/react'
+import { CollaborationPanel } from './features/collaboration'
+import { TldrawCanvas } from './features/tldraw'
 
 function App() {
-	const [editor, setEditor] = useState<Editor | null>(null) // [1]
-	return (
-		<div className="tldraw-ai-container">
-			<Tldraw persistenceKey="tldraw-ai-demo" onMount={setEditor} />
-			{editor && <InputBar editor={editor} />}
-		</div>
-	)
-}
+	const [isCanvasCollapsed, setIsCanvasCollapsed] = useState(false)
+	
+	const toggleCanvas = () => {
+		setIsCanvasCollapsed(!isCanvasCollapsed)
+	}
 
-function InputBar({ editor }: { editor: Editor }) {
-	const ai = useTldrawAiExample(editor)
-
-	// The state of the prompt input, either idle or loading with a cancel callback
-	const [isGenerating, setIsGenerating] = useState(false)
-
-	// A stashed cancel function that we can call if the user clicks the button while loading
-	const rCancelFn = useRef<(() => void) | null>(null)
-
-	// Put the editor and ai helpers onto the window for debugging. You can run commands like `ai.prompt('draw a unicorn')` in the console.
-	useEffect(() => {
-		if (!editor) return
-		;(window as any).editor = editor
-		;(window as any).ai = ai
-	}, [ai, editor])
-
-	const handleSubmit = useCallback<FormEventHandler<HTMLFormElement>>(
-		async (e) => {
-			e.preventDefault()
-
-			// If we have a stashed cancel function, call it and stop here
-			if (rCancelFn.current) {
-				rCancelFn.current()
-				rCancelFn.current = null
-				setIsGenerating(false)
-				return
-			}
-
-			try {
-				const formData = new FormData(e.currentTarget)
-				const value = formData.get('input') as string
-
-				// We call the ai module with the value from the input field and get back a promise and a cancel function
-				const { promise, cancel } = ai.prompt({ message: value, stream: true })
-
-				// Stash the cancel function so we can call it if the user clicks the button again
-				rCancelFn.current = cancel
-
-				// Set the state to loading
-				setIsGenerating(true)
-
-				// ...wait for the promise to resolve
-				await promise
-
-				// ...then set the state back to idle
-				setIsGenerating(false)
-				rCancelFn.current = null
-			} catch (e: any) {
-				console.error(e)
-				setIsGenerating(false)
-				rCancelFn.current = null
-			}
-		},
-		[prompt]
-	)
+	const bgColor = 'gray.50'
+	const toggleBg = 'white'
+	const borderColor = 'gray.200'
 
 	return (
-		<div className="prompt-input">
-			<form onSubmit={handleSubmit}>
-				<input name="input" type="text" autoComplete="off" placeholder="Enter your prompt…" />
-				<button>{isGenerating ? <DefaultSpinner /> : 'Send'}</button>
-			</form>
-		</div>
+		<Flex h="100vh" w="100vw" position="fixed" inset={0} bg={bgColor}>
+			{/* Left Panel - Collaboration */}
+			<Box 
+				w={isCanvasCollapsed ? "100%" : "50%"}
+				position="relative"
+				borderRight={isCanvasCollapsed ? "none" : "1px solid"}
+				borderColor={borderColor}
+				transition="width 0.3s ease"
+				overflow="hidden"
+			>
+				{/* Toggle Button */}
+				<Button
+					onClick={toggleCanvas}
+					position="absolute"
+					top={4}
+					right={4}
+					size="sm"
+					colorScheme="blue"
+					variant="outline"
+					bg={toggleBg}
+					shadow="md"
+					zIndex={1000}
+					minW="auto"
+					w="40px"
+					h="32px"
+					borderRadius="lg"
+					title={isCanvasCollapsed ? 'Show Canvas' : 'Hide Canvas'}
+					_hover={{
+						transform: "translateY(-1px)",
+						shadow: "lg",
+						borderColor: "blue.400"
+					}}
+					_active={{
+						transform: "translateY(0)",
+						shadow: "md"
+					}}
+				>
+					<Text fontSize="sm" fontWeight="bold">
+						{isCanvasCollapsed ? '→' : '←'}
+					</Text>
+				</Button>
+
+				{/* Collaboration Panel */}
+				<CollaborationPanel isExpanded={isCanvasCollapsed} />
+			</Box>
+
+			{/* Right Panel - TLdraw Canvas */}
+			<Box 
+				w={isCanvasCollapsed ? "0" : "50%"}
+				transition="all 0.3s ease"
+				overflow="hidden"
+				position="relative"
+			>
+				<TldrawCanvas isVisible={!isCanvasCollapsed} />
+			</Box>
+
+			{/* Status Bar */}
+			<Box
+				position="absolute"
+				bottom={0}
+				left={0}
+				right={isCanvasCollapsed ? 0 : "50%"}
+				h="24px"
+				bg="gray.100"
+				borderTop="1px solid"
+				borderColor={borderColor}
+				px={3}
+				transition="right 0.3s ease"
+			>
+				<HStack h="100%" justify="space-between" fontSize="xs" color="gray.500">
+					<Text>Ready</Text>
+					<HStack gap={3}>
+						<Text>Collaboration</Text>
+						{!isCanvasCollapsed && <Text>•</Text>}
+						{!isCanvasCollapsed && <Text>Canvas</Text>}
+					</HStack>
+				</HStack>
+			</Box>
+		</Flex>
 	)
 }
 
