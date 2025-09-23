@@ -5,3 +5,31 @@ body {
 	padding: 0;
 	overscroll-behavior: none;
 }
+
+/* Stream Video Menu Text Fixes - Better contrast on video backgrounds */
+.str-video__generic-menu .str-video__generic-menu--item button {
+	color: white !important;
+	background-color: rgba(0, 0, 0, 0.8) !important;
+	border-radius: 4px !important;
+}
+
+.str-video__generic-menu .str-video__generic-menu--item button:hover {
+	background-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+.str-video__notification .str-video__notification__message {
+	color: white !important;
+	background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.str-video__participant-view .str-video__participant-details .str-video__participant-details__name {
+	color: white !important;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Menu container background for better visibility */
+.str-video__generic-menu {
+	background-color: rgba(0, 0, 0, 0.9) !important;
+	border-radius: 8px !important;
+	backdrop-filter: blur(10px) !important;
+}

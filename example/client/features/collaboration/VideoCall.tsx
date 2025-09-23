@@ -1,0 +1,242 @@
+import { useState, useEffect } from 'react'
+import {
+	Box,
+	Button,
+	Input,
+	Text,
+	Stack,
+	Heading
+} from '@chakra-ui/react'
+import {
+	Call,
+	CallControls,
+	SpeakerLayout,
+	StreamCall,
+	StreamTheme,
+} from '@stream-io/video-react-sdk'
+import { useVideo } from './VideoProvider'
+
+// Import Stream Video CSS for beautiful UI
+import '@stream-io/video-react-sdk/dist/css/styles.css'
+
+// Browser compatibility check
+const isWebRTCSupported = (): boolean => {
+	return !!(
+		typeof navigator !== 'undefined' &&
+		navigator.mediaDevices &&
+		typeof navigator.mediaDevices.getUserMedia === 'function' &&
+		typeof RTCPeerConnection !== 'undefined'
+	)
+}
+
+export function VideoCall() {
+	const { client, isConnected, connectUser } = useVideo()
+	const [userName, setUserName] = useState('')
+	const [callId, setCallId] = useState('')
+	const [activeCall, setActiveCall] = useState<Call | null>(null)
+	const [isJoining, setIsJoining] = useState(false)
+	const [webRTCSupported, setWebRTCSupported] = useState(true)
+
+	useEffect(() => {
+		setWebRTCSupported(isWebRTCSupported())
+	}, [])
+
+	// Auto-clear activeCall when call ends (not just when user clicks leave)
+	useEffect(() => {
+		if (!activeCall) return
+
+		const handleCallEnd = () => {
+			console.log('Call ended, clearing activeCall')
+			setActiveCall(null)
+		}
+
+		// Listen for call ending events
+		activeCall.on('call.ended', handleCallEnd)
+
+		return () => {
+			activeCall.off('call.ended', handleCallEnd)
+		}
+	}, [activeCall])
+
+	const handleConnect = async () => {
+		if (!userName.trim()) return
+		
+		try {
+			setIsJoining(true)
+			await connectUser(userName.trim())
+		} catch (error) {
+			console.error('Failed to connect:', error)
+		} finally {
+			setIsJoining(false)
+		}
+	}
+
+	const handleJoinCall = async () => {
+		if (!client || !callId.trim()) return
+
+		// Check WebRTC support before attempting to join
+		if (!webRTCSupported) {
+			alert('Your browser doesn\'t support video calling. Please use Chrome, Firefox, or Safari.')
+			return
+		}
+
+		try {
+			setIsJoining(true)
+			const call = client.call('default', callId.trim())
+			
+			// Join the call first - let Stream SDK handle WebRTC setup
+			await call.join({ create: true })
+			
+			// Set as active call
+			setActiveCall(call)
+			console.log(`Successfully joined call: ${callId.trim()}`)
+			
+			// Enable camera and microphone after successful join
+			try {
+				await call.camera.enable()
+				await call.microphone.enable()
+				console.log('Camera and microphone enabled successfully')
+			} catch (mediaError) {
+				console.warn('Media permissions issue, call will work but without camera/mic:', mediaError)
+				// Call still works, user can enable manually via call controls
+			}
+			
+		} catch (error: any) {
+			console.error('Failed to join call:', error)
+			
+			// Provide specific error messages based on error type
+			let errorMessage = 'Failed to join call. '
+			
+			if (error.message?.includes('addTransceiver')) {
+				errorMessage += 'Browser compatibility issue. Please try refreshing the page or use a different browser.'
+			} else if (error.message?.includes('token')) {
+				errorMessage += 'Authentication failed. Please try reconnecting.'
+			} else if (error.message?.includes('network') || error.message?.includes('connection')) {
+				errorMessage += 'Network connection issue. Please check your internet connection.'
+			} else {
+				errorMessage += 'Please try again.'
+			}
+			
+			alert(errorMessage)
+		} finally {
+			setIsJoining(false)
+		}
+	}
+
+	const handleLeaveCall = async () => {
+		if (activeCall) {
+			try {
+				await activeCall.leave()
+				console.log('Left call successfully')
+			} catch (error) {
+				console.error('Failed to leave call:', error)
+			} finally {
+				// Always clear the activeCall state regardless of leave success/failure
+				setActiveCall(null)
+			}
+		}
+	}
+
+	// Show video call UI if in a call
+	if (activeCall) {
+		return (
+			<StreamCall call={activeCall}>
+				<StreamTheme style={{ height: '100%', width: '100%' }}>
+					<VideoCallUI onLeave={handleLeaveCall} />
+				</StreamTheme>
+			</StreamCall>
+		)
+	}
+
+	// Show setup form if not connected or not in a call
+	return (
+		<Box p={6} h="100%" display="flex" flexDirection="column" justifyContent="center">
+			<Stack direction="column" gap={6} maxW="300px" mx="auto">
+				<Heading size="md" color="gray.700" textAlign="center">
+					Video Call
+				</Heading>
+
+				{!webRTCSupported && (
+					<Box 
+						bg="orange.50" 
+						borderColor="orange.200" 
+						border="1px solid" 
+						borderRadius="md"
+						p={3}
+					>
+						<Text fontSize="sm" color="orange.800">
+							⚠️ Your browser doesn't fully support video calling. Please use Chrome, Firefox, or Safari for the best experience.
+						</Text>
+					</Box>
+				)}
+				
+				{!isConnected ? (
+					<Stack direction="column" gap={4} w="100%">
+						<Box w="100%">
+							<Text fontSize="sm" color="gray.600" mb={2}>
+								Your Name
+							</Text>
+							<Input
+								placeholder="Enter your name"
+								value={userName}
+								onChange={(e) => setUserName(e.target.value)}
+								size="md"
+								borderRadius="md"
+							/>
+						</Box>
+						<Button
+							onClick={handleConnect}
+							colorScheme="blue"
+							w="100%"
+							loading={isJoining}
+							disabled={!userName.trim() || isJoining}
+						>
+							{isJoining ? 'Connecting...' : 'Connect'}
+						</Button>
+					</Stack>
+				) : (
+					<Stack direction="column" gap={4} w="100%">
+						<Text fontSize="sm" color="green.600" fontWeight="medium">
+							Connected
+						</Text>
+						<Box w="100%">
+							<Text fontSize="sm" color="gray.600" mb={2}>
+								Call ID
+							</Text>
+							<Input
+								placeholder="Enter call ID"
+								value={callId}
+								onChange={(e) => setCallId(e.target.value)}
+								size="md"
+								borderRadius="md"
+							/>
+						</Box>
+						<Button
+							onClick={handleJoinCall}
+							colorScheme="blue"
+							w="100%"
+							loading={isJoining}
+							disabled={!callId.trim() || isJoining}
+						>
+							{isJoining ? 'Joining...' : 'Join Call'}
+						</Button>
+						<Text fontSize="xs" color="gray.500" textAlign="center">
+							Share the same Call ID with others to join the same call
+						</Text>
+					</Stack>
+				)}
+			</Stack>
+		</Box>
+	)
+}
+
+function VideoCallUI({ onLeave }: { onLeave: () => void }) {
+	// Simplified: Let Stream SDK handle all the state management
+	// Just render the video interface components
+	return (
+		<>
+			<SpeakerLayout participantsBarPosition="bottom" />
+			<CallControls onLeave={onLeave} />
+		</>
+	)
+}

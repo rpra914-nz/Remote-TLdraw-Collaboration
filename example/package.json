@@ -19,6 +19,7 @@
 		"@emotion/react": "^11.14.0",
 		"@emotion/styled": "^11.14.1",
 		"@google/generative-ai": "^0.21.0",
+		"@stream-io/video-react-sdk": "^1.21.3",
 		"@tldraw/ai": "workspace:",
 		"@tldraw/tlschema": "catalog:",
 		"@worker-tools/json-stream": "^0.1.0-pre.12",
