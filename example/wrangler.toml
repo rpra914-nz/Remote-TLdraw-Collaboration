@@ -18,9 +18,9 @@ bindings = [
     { name = "TLDRAW_DURABLE_OBJECT", class_name = "TldrawDurableObject" },
 ]
 
-#[[routes]]
-#pattern = "multiplayer.templates.tldraw.dev"
-#custom_domain = true
+[[routes]]
+pattern = "remote-tldraw-sync.jiachen023212.workers.dev"
+custom_domain = true
 
 # Durable objects require migrations to create/modify/delete them
 [[migrations]]
