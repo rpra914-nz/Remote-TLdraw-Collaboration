@@ -60,7 +60,7 @@ export function VideoCall() {
 
 	const handleConnect = async () => {
 		if (!userName.trim()) return
-		
+
 		try {
 			setIsJoining(true)
 			await connectUser(userName.trim())
@@ -83,14 +83,14 @@ export function VideoCall() {
 		try {
 			setIsJoining(true)
 			const call = client.call('default', callId.trim())
-			
+
 			// Join the call first - let Stream SDK handle WebRTC setup
 			await call.join({ create: true })
-			
+
 			// Set as active call
 			setActiveCall(call)
 			console.log(`Successfully joined call: ${callId.trim()}`)
-			
+
 			// Enable camera and microphone after successful join
 			try {
 				await call.camera.enable()
@@ -100,13 +100,13 @@ export function VideoCall() {
 				console.warn('Media permissions issue, call will work but without camera/mic:', mediaError)
 				// Call still works, user can enable manually via call controls
 			}
-			
+
 		} catch (error: any) {
 			console.error('Failed to join call:', error)
-			
+
 			// Provide specific error messages based on error type
 			let errorMessage = 'Failed to join call. '
-			
+
 			if (error.message?.includes('addTransceiver')) {
 				errorMessage += 'Browser compatibility issue. Please try refreshing the page or use a different browser.'
 			} else if (error.message?.includes('token')) {
@@ -116,7 +116,7 @@ export function VideoCall() {
 			} else {
 				errorMessage += 'Please try again.'
 			}
-			
+
 			alert(errorMessage)
 		} finally {
 			setIsJoining(false)
@@ -157,10 +157,10 @@ export function VideoCall() {
 				</Heading>
 
 				{!webRTCSupported && (
-					<Box 
-						bg="orange.50" 
-						borderColor="orange.200" 
-						border="1px solid" 
+					<Box
+						bg="orange.50"
+						borderColor="orange.200"
+						border="1px solid"
 						borderRadius="md"
 						p={3}
 					>
@@ -169,7 +169,7 @@ export function VideoCall() {
 						</Text>
 					</Box>
 				)}
-				
+
 				{!isConnected ? (
 					<Stack direction="column" gap={4} w="100%">
 						<Box w="100%">
@@ -231,12 +231,59 @@ export function VideoCall() {
 }
 
 function VideoCallUI({ onLeave }: { onLeave: () => void }) {
-	// Simplified: Let Stream SDK handle all the state management
-	// Just render the video interface components
+	// Center the video call interface properly
 	return (
-		<>
-			<SpeakerLayout participantsBarPosition="bottom" />
-			<CallControls onLeave={onLeave} />
-		</>
+		<Box 
+			h="100%" 
+			w="100%" 
+			p={4}
+			display="flex" 
+			flexDirection="column" 
+			position="relative"
+		>
+			{/* Beautiful title */}
+			<Box 
+				position="absolute" 
+				top={4} 
+				left="50%" 
+				transform="translateX(-50%)"
+				zIndex={10}
+			>
+				<Heading 
+					size="md" 
+					textAlign="center"
+					px={4}
+					py={2}
+					borderRadius="lg"
+					backdropFilter="blur(10px)"
+					fontWeight="semibold"
+					letterSpacing="wider"
+					fontFamily="sans-serif"
+				>
+					Live Video Call
+				</Heading>
+			</Box>
+			
+			<Box 
+				flex={1} 
+				w="100%" 
+				display="flex" 
+				justifyContent="center" 
+				alignItems="center"
+				position="relative"
+			>
+				<SpeakerLayout participantsBarPosition="bottom" />
+			</Box>
+			
+			<Box 
+				position="absolute" 
+				bottom={4} 
+				left="50%" 
+				transform="translateX(-50%)"
+				zIndex={10}
+			>
+				<CallControls onLeave={onLeave} />
+			</Box>
+		</Box>
 	)
 }
