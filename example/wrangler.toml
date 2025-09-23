@@ -1,6 +1,6 @@
 name = "remote-tldraw-sync"
 main = "worker/worker.ts"
-compatibility_date = "2025-09-23"
+compatibility_date = "2025-03-10"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 account_id = "d18d2804fcada0285bb3f0e5ff7a2f08"
