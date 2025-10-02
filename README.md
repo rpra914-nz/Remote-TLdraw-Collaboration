@@ -1,5 +1,4 @@
 $\alpha = x+\beta_x$
-P $\and B $\entails Q
 
 # tldraw ai module
 
