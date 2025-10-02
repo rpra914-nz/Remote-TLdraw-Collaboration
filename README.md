@@ -1,3 +1,5 @@
+$\alpha = x+\beta_x$
+
 # tldraw ai module
 
 This repo is meant to help developers build integrations between tldraw's canvas and AI tools. It contains several resources that can be used to get information out of tldraw (in order to prompt a model) and to create changes in tldraw based on some generated instructions.
